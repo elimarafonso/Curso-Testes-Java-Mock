@@ -62,18 +62,11 @@
 			<optional>true</optional>
 		</dependency>
 
-<!-- esta dependencia do spring boot já adiciona o mokito -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
-	<!-- dependencia do mockito -->
-	<!-- <dependency> -->
-	<!-- <groupId>org.mockito</groupId> -->
-	<!-- <artifactId>mockito-core</artifactId> -->
-	<!-- <version>4.6.1</version> -->
-	<!-- </dependency> -->
 
 		<dependency>
 			<groupId>com.h2database</groupId>
