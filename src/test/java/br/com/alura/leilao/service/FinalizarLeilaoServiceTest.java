@@ -22,13 +22,17 @@ class FinalizarLeilaoServiceTest {
 	@Autowired
 	private FinalizarLeilaoService service;
 
+	//falando pro Mockito que esta dependencia é um mock
 	@Mock
 	private LeilaoDao leilaoDao;
+	
+	@Mock
+	private EnviadorDeEmails enviadorDeEmails;
 
 	@BeforeEach
 	public void BeforeEach() {
 		MockitoAnnotations.initMocks(this);
-		this.service = new FinalizarLeilaoService(leilaoDao);
+		this.service = new FinalizarLeilaoService(leilaoDao,enviadorDeEmails);
 	}
 
 	@Test
@@ -48,22 +52,61 @@ class FinalizarLeilaoServiceTest {
 		Leilao leilao = leiloes.get(0);
 
 		Assert.assertTrue(leilao.isFechado());
-		Assert.assertEquals(new BigDecimal("900"), leilao.getLanceVencedor().getValor());
+		Assert.assertEquals(new BigDecimal("3500"), leilao.getLanceVencedor().getValor());
 
+		//Verifica que determinado comportamento aconteceu uma vez.
 		Mockito.verify(leilaoDao).salvar(leilao);
 
 	}
 
+	@Test
+	void deveriaEnviarEmailParaVencedorDoLeilao() {
+		List<Leilao> leiloes = leiloes();
+		
+		Mockito.when(leilaoDao.buscarLeiloesExpirados())
+		.thenReturn(leiloes);
+		
+		service.finalizarLeiloesExpirados();
+		
+		Leilao leilao = leiloes.get(0);
+		Lance lanceVencedor = leilao.getLanceVencedor();
+		
+		Mockito.verify(enviadorDeEmails)
+		.enviarEmailVencedorLeilao(lanceVencedor);
+	}
+	
+	@Test
+	void naoDeveriaEnviarEmailParaVencedorDoLeilaoEmCasoDeErroAoEncerrarOLeilao() {
+		List<Leilao> leiloes = leiloes();
+		
+		Mockito.when(leilaoDao.buscarLeiloesExpirados())
+		.thenReturn(leiloes);
+		
+		/*
+		 * Quando o método "salvar" for chamado
+		 * passando qualquer parametro, lança uma exception
+		 */
+		Mockito.when(leilaoDao.salvar(Mockito.any()))
+		.thenThrow(RuntimeException.class);
+		
+		try {
+			service.finalizarLeiloesExpirados();
+			//verifica se o método NÃO OUVE INTERAÇÃO "NoInteractions"
+			Mockito.verifyNoInteractions(enviadorDeEmails);
+		} catch (Exception e) {}
+	}
+	
+	
 	private List<Leilao> leiloes() {
 		List<Leilao> lista = new ArrayList<>();
 
-		Leilao leilao = new Leilao("Celular", new BigDecimal("500"), new Usuario("Fulano"));
+		Leilao leilao = new Leilao("Monitor", new BigDecimal("3000"), new Usuario("Fulano"));
 
-		Lance primeiro = new Lance(new Usuario("Beltrano"), new BigDecimal("600"));
-		Lance segundo = new Lance(new Usuario("Ciclano"), new BigDecimal("900"));
+		Lance primeiroLance = new Lance(new Usuario("Elimar afonso"), new BigDecimal("3500"));
+		Lance segundoLance = new Lance(new Usuario("Thayslane"), new BigDecimal("3000"));
 
-		leilao.propoe(primeiro);
-		leilao.propoe(segundo);
+		leilao.propoe(primeiroLance);
+		leilao.propoe(segundoLance);
 
 		lista.add(leilao);
 
